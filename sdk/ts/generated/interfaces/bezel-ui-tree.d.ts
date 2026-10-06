@@ -6,8 +6,10 @@
  */
 export function apply(ops: Array<Op>): void;
 /**
- * Mounts `root` as the window's content, replacing any previous root. The
- * previous root is unmounted but stays alive while its handle does.
+ * Mounts `root` as the window's content. The previous root, if any, is
+ * unmounted and destroyed if the app no longer holds it. Setting the
+ * current root again is a no-op. Fails with `invalid-child` if `root` has
+ * a parent; the mounted root cannot be attached anywhere until replaced.
  */
 export function setRoot(root: Node): void;
 export type Style = import('./bezel-ui-style.js').Style;
@@ -19,8 +21,8 @@ export type Style = import('./bezel-ui-style.js').Style;
  * 
  * ## `"box"`
  * 
- * Generic layout container; the only element whose children take part in
- * flex/grid layout.
+ * Generic layout container. The only element whose `display`,
+ * `direction`, `gap` and grid fields lay out its children.
  * ## `"text"`
  * 
  * Static text. Wraps within its box; inherits font and colour.
@@ -45,8 +47,8 @@ export type Style = import('./bezel-ui-style.js').Style;
  * Raster image from a bezel-asset path.
  * ## `"scroll"`
  * 
- * Scrollable viewport around one child. Its offset is host-owned and
- * never reported per frame.
+ * Scrollable viewport around at most one child. Its offset is host-owned
+ * and never reported per frame.
  * ## `"list"`
  * 
  * Virtualised list. The host asks for row windows with `request-rows`;
@@ -122,8 +124,9 @@ export interface PropPlaceholder {
   val: string,
 }
 /**
- * Any element. A disabled element is not focusable and emits no events.
- * Default true.
+ * Any element. A disabled element and its descendants are not focusable
+ * and emit no `click`, `change`, `submit`, `key`, `focus` or `blur`;
+ * `resize` and `request-rows` are unaffected. Default true.
  */
 export interface PropEnabled {
   tag: 'enabled',
@@ -204,7 +207,7 @@ export interface PropUnlisten {
   val: EventKind,
 }
 /**
- * Why a mutation was rejected.
+ * Why a mutation was rejected. Adding a case is a major version bump.
  * # Variants
  * 
  * ## `"inapplicable-prop"`
@@ -213,14 +216,21 @@ export interface PropUnlisten {
  * ## `"cycle"`
  * 
  * The op would make a node its own ancestor.
+ * ## `"invalid-child"`
+ * 
+ * The parent does not accept this child: only box and list take any
+ * number of children, scroll takes at most one, and every other element
+ * takes none. The mounted root cannot be attached anywhere, and a node
+ * with a parent cannot become the root.
  */
-export type ErrorCode = 'inapplicable-prop' | 'cycle';
+export type ErrorCode = 'inapplicable-prop' | 'cycle' | 'invalid-child';
 /**
  * A rejected mutation. When a batch fails, nothing in it was applied.
  */
 export interface TreeError {
   /**
-   * Position of the offending op in the batch; 0 for `node` methods.
+   * Position of the offending op in the batch; 0 for `node` methods and
+   * `set-root`.
    */
   index: number,
   /**
@@ -229,6 +239,44 @@ export interface TreeError {
    */
   node: number,
   code: ErrorCode,
+}
+/**
+ * The host-owned state `node.value` reports.
+ */
+export type NodeValue = NodeValueNone | NodeValueText | NodeValueChecked | NodeValueSelected | NodeValueScrollOffset;
+/**
+ * Elements without host-owned state.
+ */
+export interface NodeValueNone {
+  tag: 'none',
+}
+/**
+ * input, textarea: the current text.
+ */
+export interface NodeValueText {
+  tag: 'text',
+  val: string,
+}
+/**
+ * checkbox: whether it is checked.
+ */
+export interface NodeValueChecked {
+  tag: 'checked',
+  val: boolean,
+}
+/**
+ * select: the `value` of the chosen option, if any.
+ */
+export interface NodeValueSelected {
+  tag: 'selected',
+  val: string | undefined,
+}
+/**
+ * scroll: the offset as (x, y) in logical pixels.
+ */
+export interface NodeValueScrollOffset {
+  tag: 'scroll-offset',
+  val: [number, number],
 }
 /**
  * One mutation. Structural ops name the parent first.
@@ -259,8 +307,8 @@ export interface OpInsert {
   val: [Node, Node, Node],
 }
 /**
- * (parent, child): detach child from parent. The child stays alive while
- * its handle does. A no-op if child is not a child of parent.
+ * (parent, child): detach child from parent; it is destroyed if the app
+ * no longer holds it. A no-op if child is not a child of parent.
  */
 export interface OpRemove {
   tag: 'remove',
@@ -294,10 +342,7 @@ export class Node {
   */
   remove(child: Node): void;
   /**
-  * Host-owned state, readable synchronously without a pending event:
-  * input and textarea text, select value ("" when nothing is selected),
-  * checkbox "true" or "false", scroll offset in logical pixels as "x,y".
-  * Every other element returns "".
+  * Host-owned state, readable synchronously without a pending event.
   */
-  value(): string;
+  value(): NodeValue;
 }

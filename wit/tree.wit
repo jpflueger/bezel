@@ -11,8 +11,8 @@ interface tree {
   /// of them. Adding one is a minor version bump and requires
   /// docs/elements/<name>.md with a "Native host mapping" section.
   enum element {
-    /// Generic layout container; the only element whose children take part in
-    /// flex/grid layout.
+    /// Generic layout container. The only element whose `display`,
+    /// `direction`, `gap` and grid fields lay out its children.
     %box,
     /// Static text. Wraps within its box; inherits font and colour.
     text,
@@ -29,8 +29,8 @@ interface tree {
     select,
     /// Raster image from a bezel-asset path.
     image,
-    /// Scrollable viewport around one child. Its offset is host-owned and
-    /// never reported per frame.
+    /// Scrollable viewport around at most one child. Its offset is host-owned
+    /// and never reported per frame.
     scroll,
     /// Virtualised list. The host asks for row windows with `request-rows`;
     /// the app materialises them as children.
@@ -77,8 +77,9 @@ interface tree {
     text(string),
     /// input, textarea: hint shown while the value is empty.
     placeholder(string),
-    /// Any element. A disabled element is not focusable and emits no events.
-    /// Default true.
+    /// Any element. A disabled element and its descendants are not focusable
+    /// and emit no `click`, `change`, `submit`, `key`, `focus` or `blur`;
+    /// `resize` and `request-rows` are unaffected. Default true.
     enabled(bool),
     /// checkbox: replaces the host-owned checked state without emitting
     /// `change`. Default false.
@@ -106,17 +107,23 @@ interface tree {
     unlisten(event-kind),
   }
 
-  /// Why a mutation was rejected.
+  /// Why a mutation was rejected. Adding a case is a major version bump.
   enum error-code {
     /// The prop does not apply to the node's element (see `prop`).
     inapplicable-prop,
     /// The op would make a node its own ancestor.
     cycle,
+    /// The parent does not accept this child: only box and list take any
+    /// number of children, scroll takes at most one, and every other element
+    /// takes none. The mounted root cannot be attached anywhere, and a node
+    /// with a parent cannot become the root.
+    invalid-child,
   }
 
   /// A rejected mutation. When a batch fails, nothing in it was applied.
   record tree-error {
-    /// Position of the offending op in the batch; 0 for `node` methods.
+    /// Position of the offending op in the batch; 0 for `node` methods and
+    /// `set-root`.
     index: u32,
     /// `node.id` of the node the offending op targeted (the parent, for
     /// structural ops).
@@ -124,9 +131,25 @@ interface tree {
     code: error-code,
   }
 
-  /// A handle to one host-owned node. Dropping the handle detaches the node
-  /// from its parent and destroys it; its children are detached and live on
-  /// for as long as their own handles do.
+  /// The host-owned state `node.value` reports.
+  variant node-value {
+    /// Elements without host-owned state.
+    none,
+    /// input, textarea: the current text.
+    text(string),
+    /// checkbox: whether it is checked.
+    checked(bool),
+    /// select: the `value` of the chosen option, if any.
+    selected(option<string>),
+    /// scroll: the offset as (x, y) in logical pixels.
+    scroll-offset(tuple<f32, f32>),
+  }
+
+  /// A handle to one host-owned node. The host keeps a node alive while the
+  /// app holds a handle to it, it is attached to a parent, or it is mounted
+  /// as the root. When none of these holds, the node is destroyed; its
+  /// children are detached and destroyed in turn unless the app still holds
+  /// them. Ids are never reused.
   resource node {
     /// Creates a detached node with no props set.
     constructor(el: element);
@@ -141,11 +164,8 @@ interface tree {
     insert: func(child: borrow<node>, before: borrow<node>) -> result<_, tree-error>;
     /// Same as `apply([op.remove((this, child))])`.
     remove: func(child: borrow<node>) -> result<_, tree-error>;
-    /// Host-owned state, readable synchronously without a pending event:
-    /// input and textarea text, select value ("" when nothing is selected),
-    /// checkbox "true" or "false", scroll offset in logical pixels as "x,y".
-    /// Every other element returns "".
-    value: func() -> string;
+    /// Host-owned state, readable synchronously without a pending event.
+    value: func() -> node-value;
   }
 
   /// One mutation. Structural ops name the parent first.
@@ -159,8 +179,8 @@ interface tree {
     /// before `before`. If `before` is not a child of parent, child is
     /// appended.
     insert(tuple<borrow<node>, borrow<node>, borrow<node>>),
-    /// (parent, child): detach child from parent. The child stays alive while
-    /// its handle does. A no-op if child is not a child of parent.
+    /// (parent, child): detach child from parent; it is destroyed if the app
+    /// no longer holds it. A no-op if child is not a child of parent.
     remove(tuple<borrow<node>, borrow<node>>),
   }
 
@@ -169,7 +189,9 @@ interface tree {
   /// applied and the first offending op is reported.
   apply: func(ops: list<op>) -> result<_, tree-error>;
 
-  /// Mounts `root` as the window's content, replacing any previous root. The
-  /// previous root is unmounted but stays alive while its handle does.
-  set-root: func(root: borrow<node>);
+  /// Mounts `root` as the window's content. The previous root, if any, is
+  /// unmounted and destroyed if the app no longer holds it. Setting the
+  /// current root again is a no-op. Fails with `invalid-child` if `root` has
+  /// a parent; the mounted root cannot be attached anywhere until replaced.
+  set-root: func(root: borrow<node>) -> result<_, tree-error>;
 }
