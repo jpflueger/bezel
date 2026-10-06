@@ -6,7 +6,7 @@
 
 Bezel runs desktop and web apps written as WebAssembly components. You write the app in Python, Rust or TypeScript; Bezel runs it on Windows, macOS, Linux and in the browser. There is no JavaScript in your app and no Chromium in the download.
 
-> **Status: pre-alpha scaffold.** This repository was bootstrapped from a feasibility study, an architecture document and a PRD (see `docs/`). `bezel-core` compiles and its tests pass; the hosts, CLI and SDKs are skeletons with the real design encoded in comments and issues. Nothing here runs an app yet. Start with `docs/adr/` and `roadmap/`.
+> **Status: pre-alpha scaffold.** This repository was bootstrapped from a feasibility study, an architecture document and a PRD (see `docs/`). `bezel-core` compiles and its tests pass; the hosts, CLI and SDKs are skeletons with the real design encoded in comments and issues. Nothing here runs an app yet. Start with `docs/adr/` and the [issues](https://github.com/jpflueger/bezel/issues) (epics are labelled `type:epic`).
 
 ## How it works
 
@@ -33,7 +33,6 @@ bezel pack                       # signed installers for 3 OSes + a web bundle
 | `sdk/{python,rust,ts}` | Idiomatic wrappers over generated bindings. |
 | `examples/` | Counter in Python and Rust; todo and log-viewer to follow. |
 | `docs/adr` · `docs/rfcs` · `docs/elements` | Decisions, proposals, per-element specs with Native host mappings. |
-| `roadmap/` | `roadmap.json` + `bootstrap.sh` → GitHub labels, milestones, issues, project board. |
 | `brand/` | Mark, wordmark, design tokens. |
 
 ## Why not Tauri?
