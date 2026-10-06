@@ -1,0 +1,9 @@
+[package]
+name = "bezel"
+description = "Bezel Rust SDK: view-function API over the bezel:ui contract."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wit-bindgen = "0.46"

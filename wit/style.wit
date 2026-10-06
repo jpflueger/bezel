@@ -1,0 +1,67 @@
+package bezel:ui@0.1.0;
+
+/// Types only. The layout half mirrors the flexbox/grid subset that Taffy and
+/// every browser implement, so each host maps it 1:1.
+interface style {
+  enum display { flex, grid, none }
+  enum direction { row, column }
+  enum wrap { no-wrap, wrap }
+  enum align { start, center, end, stretch, baseline }
+  enum justify { start, center, end, space-between, space-around, space-evenly }
+  enum overflow { visible, hidden, scroll, auto }
+  enum cursor { default, pointer, text, move, not-allowed }
+  enum font-weight { regular, medium, semibold, bold }
+
+  variant dimension { auto, px(f32), percent(f32), fr(f32) }
+  record edges { top: f32, right: f32, bottom: f32, left: f32 }
+  record color { r: u8, g: u8, b: u8, a: u8 }
+  /// A theme token resolves to a color on the host (light/dark aware).
+  enum color-token { fg, fg-muted, bg, surface, accent, accent-fg, border, ok, warn, bad }
+  variant paint { rgba(color), token(color-token) }
+
+  record font {
+    size: option<f32>,
+    weight: option<font-weight>,
+    family: option<string>,   // "sans" | "serif" | "mono" tokens; hosts map to real fonts
+    line-height: option<f32>,
+  }
+
+  record grid-track { size: dimension }
+
+  /// Sparse: every field optional; the host resolves against the theme
+  /// and inheritance rules once, then hands an absolute style to the backend.
+  record style {
+    display: option<display>,
+    direction: option<direction>,
+    wrap: option<wrap>,
+    gap: option<f32>,
+    align-items: option<align>,
+    justify-content: option<justify>,
+    align-self: option<align>,
+    flex-grow: option<f32>,
+    flex-shrink: option<f32>,
+    flex-basis: option<dimension>,
+    grid-columns: option<list<grid-track>>,
+    grid-rows: option<list<grid-track>>,
+    grid-column: option<tuple<u16, u16>>,
+    grid-row: option<tuple<u16, u16>>,
+    width: option<dimension>,
+    height: option<dimension>,
+    min-width: option<dimension>,
+    min-height: option<dimension>,
+    max-width: option<dimension>,
+    max-height: option<dimension>,
+    padding: option<edges>,
+    margin: option<edges>,
+    overflow: option<overflow>,
+    color: option<paint>,
+    background: option<paint>,
+    border-width: option<f32>,
+    border-color: option<paint>,
+    radius: option<f32>,
+    opacity: option<f32>,
+    font: option<font>,
+    cursor: option<cursor>,
+    visible: option<bool>,
+  }
+}

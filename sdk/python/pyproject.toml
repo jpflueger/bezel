@@ -1,0 +1,15 @@
+[project]
+name = "bezel"
+version = "0.0.1"
+description = "Write desktop and web apps in Python as WebAssembly components. Your language. Any frame."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT OR Apache-2.0" }
+dependencies = ["componentize-py>=0.16"]
+
+[project.scripts]
+bezel = "bezel._cli:main"   # thin launcher that execs the bundled `bezel` binary from the wheel
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

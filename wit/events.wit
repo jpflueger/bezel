@@ -1,0 +1,24 @@
+package bezel:ui@0.1.0;
+
+/// Semantic events only. Pointer movement, scroll deltas and IME composition
+/// never cross the boundary.
+interface events {
+  use tree.{event-kind};
+
+  record key-info { key: string, ctrl: bool, alt: bool, shift: bool, meta: bool }
+  record range { start: u32, end: u32 }
+
+  record event {
+    node: u32,
+    kind: event-kind,
+    text: option<string>,      // change/submit: current value
+    key: option<key-info>,     // key
+    rows: option<range>,       // request-rows: window the host wants materialised
+    size: option<tuple<f32, f32>>, // resize
+    /// Monotonic milliseconds from the host's clock.
+    at: u64,
+  }
+
+  /// WASI 0.3 native async. The host is the single event loop.
+  subscribe: func() -> stream<event>;
+}

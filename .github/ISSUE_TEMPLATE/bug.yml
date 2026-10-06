@@ -1,0 +1,23 @@
+name: Bug
+description: Something behaves differently from the docs or between hosts
+labels: ["type:task"]
+body:
+  - type: dropdown
+    id: host
+    attributes: { label: Host, options: [Webview host, Web host, Native host, CLI, SDK] }
+    validations: { required: true }
+  - type: input
+    id: os
+    attributes: { label: OS and version (and webview version if known) }
+    validations: { required: true }
+  - type: input
+    id: sdk
+    attributes: { label: SDK and version, placeholder: "python 0.2.1" }
+  - type: textarea
+    id: repro
+    attributes: { label: Minimal app that reproduces it }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected vs actual }
+    validations: { required: true }

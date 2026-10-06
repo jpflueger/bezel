@@ -1,0 +1,59 @@
+package bezel:ui@0.1.0;
+
+/// The retained element tree. The host owns it; the app holds handles.
+interface tree {
+  use style.{style};
+
+  /// The complete v0.1 element set. Every host must implement all of them.
+  /// Adding one is a minor version bump and requires docs/elements/<name>.md
+  /// with a "Native host mapping" section.
+  enum element {
+    %box, text, input, textarea, button, checkbox, select, image, scroll, %list, divider
+  }
+
+  enum event-kind { click, change, submit, focus, blur, key, resize, request-rows }
+
+  record option-item { value: string, label: string }
+
+  variant prop {
+    text(string),
+    placeholder(string),
+    enabled(bool),
+    checked(bool),
+    src(string),                 // image: bezel-asset path, never a URL to remote content
+    alt(string),                 // image accessibility name
+    label(string),               // accessibility name override
+    options(list<option-item>),  // select
+    selected(string),            // select
+    row-count(u32),              // list: total rows; host requests windows via request-rows
+    style(style),
+    listen(event-kind),          // subscribe this node to an event kind
+    unlisten(event-kind),
+  }
+
+  resource node {
+    constructor(el: element);
+    /// Stable for the life of the resource; ids are never reused in a session.
+    id: func() -> u32;
+    set: func(p: prop);
+    append: func(child: borrow<node>);
+    insert: func(child: borrow<node>, before: borrow<node>);
+    remove: func(child: borrow<node>);
+    /// Host-owned state, readable synchronously: input/textarea text,
+    /// select value, checkbox ("true"/"false"), scroll offset ("x,y").
+    value: func() -> string;
+  }
+
+  variant op {
+    set(tuple<borrow<node>, prop>),
+    append(tuple<borrow<node>, borrow<node>>),
+    insert(tuple<borrow<node>, borrow<node>, borrow<node>>),
+    remove(tuple<borrow<node>, borrow<node>>),
+  }
+
+  /// One crossing for N mutations. Applied atomically before the next frame.
+  /// An invalid op fails the whole batch; the failure is delivered as an event.
+  apply: func(ops: list<op>);
+
+  set-root: func(root: borrow<node>);
+}

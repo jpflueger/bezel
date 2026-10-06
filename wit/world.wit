@@ -1,0 +1,20 @@
+package bezel:ui@0.1.0;
+
+/// The Bezel application world. Nothing in this package may name a DOM,
+/// webview, GPU or any other host implementation detail (enforced by
+/// scripts/contract-lint.py).
+world app {
+  import tree;
+  import events;
+  import capabilities;
+  import window;
+  import wasi:clocks/monotonic-clock@0.3.0;
+  import wasi:random/random@0.3.0;
+
+  /// Called once after instantiation. Returns when the app decides to exit.
+  export run: async func();
+
+  /// Optional: hot-reload state carry-over (see architecture §12).
+  export snapshot: func() -> option<list<u8>>;
+  export restore: func(state: list<u8>);
+}

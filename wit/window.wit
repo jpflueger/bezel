@@ -1,0 +1,11 @@
+package bezel:ui@0.1.0;
+
+interface window {
+  record size { width: f32, height: f32 }
+  set-title: func(title: string);
+  set-size: func(s: size);
+  current-size: func() -> size;
+  /// The host asks before closing; the app answers within one turn or the
+  /// host closes anyway.
+  request-close: func(allow: bool);
+}

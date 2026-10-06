@@ -1,0 +1,53 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "anodize":   {"$value": "#101820", "$type": "color", "$description": "Primary text, mark frame"},
+    "anodize-2": {"$value": "#3A4652", "$type": "color"},
+    "anodize-3": {"$value": "#5A6672", "$type": "color", "$description": "Captions, labels (5.1:1 on brushed)"},
+    "brushed":   {"$value": "#EEF1F4", "$type": "color", "$description": "Page ground"},
+    "sheet":     {"$value": "#FFFFFF", "$type": "color"},
+    "sheet-2":   {"$value": "#E2E7EC", "$type": "color"},
+    "hairline":  {"$value": "#C5CDD6", "$type": "color"},
+    "hairline-2":{"$value": "#D8DEE5", "$type": "color"},
+    "cobalt":    {"$value": "#1F4FD8", "$type": "color", "$description": "Accent; the component in the mark"},
+    "cobalt-deep":{"$value": "#173FB0", "$type": "color"},
+    "cobalt-tint":{"$value": "#DDE6FB", "$type": "color"},
+    "glass":     {"$value": "#CFE4F0", "$type": "color", "$description": "Pane fills in diagrams"},
+    "verdigris": {"$value": "#2F9E8F", "$type": "color", "$description": "Success; Webview host tint (fills only)"},
+    "verdigris-deep": {"$value": "#1F756A", "$type": "color", "$description": "Verdigris for text"},
+    "verdigris-tint": {"$value": "#D9F0EC", "$type": "color"},
+    "ember":     {"$value": "#E5533B", "$type": "color", "$description": "Error; Web host tint (fills only)"},
+    "ember-deep":{"$value": "#B5361F", "$type": "color", "$description": "Ember for text"},
+    "ember-tint":{"$value": "#FBE0DA", "$type": "color"},
+    "dark": {
+      "anodize":   {"$value": "#E6EBF0", "$type": "color"},
+      "anodize-2": {"$value": "#B4BEC8", "$type": "color"},
+      "anodize-3": {"$value": "#7F8B98", "$type": "color"},
+      "brushed":   {"$value": "#0F141A", "$type": "color"},
+      "sheet":     {"$value": "#161D25", "$type": "color"},
+      "sheet-2":   {"$value": "#1E2731", "$type": "color"},
+      "hairline":  {"$value": "#2F3A46", "$type": "color"},
+      "hairline-2":{"$value": "#26303B", "$type": "color"},
+      "cobalt":    {"$value": "#6E93F5", "$type": "color"},
+      "cobalt-deep":{"$value": "#9DB6FA", "$type": "color"},
+      "cobalt-tint":{"$value": "#1B2A52", "$type": "color"},
+      "glass":     {"$value": "#213546", "$type": "color"},
+      "verdigris": {"$value": "#5CC4B5", "$type": "color"},
+      "verdigris-tint": {"$value": "#153732", "$type": "color"},
+      "ember":     {"$value": "#F07D69", "$type": "color"},
+      "ember-tint":{"$value": "#42211B", "$type": "color"}
+    }
+  },
+  "font": {
+    "display": {"$value": "'Bricolage Grotesque', system-ui, sans-serif", "$type": "fontFamily"},
+    "body":    {"$value": "'Hanken Grotesk', system-ui, sans-serif", "$type": "fontFamily"},
+    "mono":    {"$value": "'Red Hat Mono', ui-monospace, monospace", "$type": "fontFamily"},
+    "scale":   {"$value": [12,13,14,16,19,24,30,40,56,84], "$type": "number"}
+  },
+  "shape": {
+    "radius":    {"$value": "3px", "$type": "dimension"},
+    "radius-lg": {"$value": "4px", "$type": "dimension"},
+    "stroke":    {"$value": "1px", "$type": "dimension"},
+    "focus-ring":{"$value": "0 0 0 2px {color.cobalt}", "$type": "shadow"}
+  }
+}
