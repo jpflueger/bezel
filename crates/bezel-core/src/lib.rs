@@ -24,6 +24,7 @@ pub use tree::{Element, NodeId, Op, Prop, Tree};
 /// * Never generate per-frame events. Hover, scroll, caret, IME stay inside the host.
 /// * `commit` is called once per `apply` batch; batch DOM/widget work there.
 pub trait Backend {
+    /// Show `root` as the window's content, replacing any previous root.
     fn mount(&mut self, root: NodeId);
     fn create(&mut self, id: NodeId, el: Element);
     fn set_prop(&mut self, id: NodeId, prop: &Prop, style: Option<&ResolvedStyle>);

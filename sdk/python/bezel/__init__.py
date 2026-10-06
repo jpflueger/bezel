@@ -12,11 +12,13 @@ public surface and the batching model (ADR-0003):
 from __future__ import annotations
 
 import asyncio
+import sys
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Any, ClassVar
 
 __all__ = [
     "App",
+    "BatchError",
     "Box",
     "Button",
     "Checkbox",
@@ -33,20 +35,32 @@ __all__ = [
 
 
 # ---- batching -------------------------------------------------------------
+class BatchError(Exception):
+    """The host rejected a batch; nothing in it was applied."""
+
+
 class _Batch:
     ops: ClassVar[list] = []
+    labels: ClassVar[list[str]] = []  # what queued each op, for error messages
 
     @classmethod
-    def push(cls, op) -> None:
+    def push(cls, op, label: str) -> None:
         cls.ops.append(op)
+        cls.labels.append(label)
 
     @classmethod
     def flush(cls) -> None:
-        if cls.ops:
-            from . import _bindings  # generated
+        if not cls.ops:
+            return
+        from . import _bindings  # generated
 
-            _bindings.tree.apply(cls.ops)
-            cls.ops = []
+        ops, labels = cls.ops, cls.labels
+        cls.ops, cls.labels = [], []
+        try:
+            _bindings.tree.apply(ops)
+        except _bindings.types.Err as e:  # result<_, tree-error>
+            err = e.value
+            raise BatchError(f"{labels[err.index]}: {err.code.name.lower()}") from e
 
 
 # ---- elements --------------------------------------------------------------
@@ -85,28 +99,39 @@ class Element:
             _Batch.push(
                 _bindings.tree.Op_Set(
                     (self._node, _bindings.tree.Prop_Listen(_kind(kind)))
-                )
+                ),
+                f"{self._kind}.{name}",
             )
             _registry[self._node.id()] = self
             return
         from . import _bindings
 
-        _Batch.push(_bindings.tree.Op_Set((self._node, _prop(name, value))))
+        _Batch.push(
+            _bindings.tree.Op_Set((self._node, _prop(name, value))),
+            f"{self._kind}.{name}",
+        )
         object.__setattr__(self, name, value)
 
     def append(self, child: Element) -> None:
         from . import _bindings
 
-        _Batch.push(_bindings.tree.Op_Append((self._node, child._node)))
+        _Batch.push(
+            _bindings.tree.Op_Append((self._node, child._node)),
+            f"{self._kind}.append({child._kind})",
+        )
 
     def remove(self, child: Element) -> None:
         from . import _bindings
 
-        _Batch.push(_bindings.tree.Op_Remove((self._node, child._node)))
+        _Batch.push(
+            _bindings.tree.Op_Remove((self._node, child._node)),
+            f"{self._kind}.remove({child._kind})",
+        )
 
     @property
-    def value(self) -> str:  # host-owned state, synchronous read
-        return self._node.value()
+    def value(self) -> str | bool | tuple[float, float] | None:
+        """Host-owned state, read synchronously (wit `node-value`)."""
+        return getattr(self._node.value(), "value", None)
 
 
 class Box(Element):
@@ -204,11 +229,14 @@ class App:
         ) in _bindings.events.subscribe():  # WASI 0.3 stream → async iterator
             el = _registry.get(ev.node)
             h = el._handlers.get(_kind_name(ev.kind)) if el else None
-            if h:
-                r = h(ev)
-                if asyncio.iscoroutine(r):
-                    await r
-            _Batch.flush()  # one apply per handled event
+            try:
+                if h:
+                    r = h(ev)
+                    if asyncio.iscoroutine(r):
+                        await r
+                _Batch.flush()  # one apply per handled event
+            except BatchError as e:  # a bad batch is dropped; the app keeps running
+                print(f"bezel: batch rejected: {e}", file=sys.stderr)
 
 
 def _kind_name(k) -> str:

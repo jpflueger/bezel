@@ -1,59 +1,197 @@
 package bezel:ui@0.1.0;
 
-/// The retained element tree. The host owns it; the app holds handles.
+/// The retained element tree (ADR-0003). The host owns the tree; the app holds
+/// `node` handles and mutates it, preferably through one `apply` call per turn.
+/// Host-owned state (text being typed, scroll offset, checked) never crosses
+/// the boundary unasked; the app reads it synchronously with `node.value`.
 interface tree {
   use style.{style};
 
-  /// The complete v0.1 element set. Every host must implement all of them.
-  /// Adding one is a minor version bump and requires docs/elements/<name>.md
-  /// with a "Native host mapping" section.
+  /// The complete v0.1 element set (ADR-0006). Every host must implement all
+  /// of them. Adding one is a minor version bump and requires
+  /// docs/elements/<name>.md with a "Native host mapping" section.
   enum element {
-    %box, text, input, textarea, button, checkbox, select, image, scroll, %list, divider
+    /// Generic layout container. The only element whose `display`,
+    /// `direction`, `gap` and grid fields lay out its children.
+    %box,
+    /// Static text. Wraps within its box; inherits font and colour.
+    text,
+    /// Single-line text input. Its text is host-owned.
+    input,
+    /// Multi-line text input. Its text is host-owned.
+    textarea,
+    /// Push button. Emits `click`.
+    button,
+    /// Boolean toggle. Its checked state is host-owned; emits `change`.
+    checkbox,
+    /// Single-choice dropdown over `options`. Its selection is host-owned;
+    /// emits `change`.
+    select,
+    /// Raster image from a bezel-asset path.
+    image,
+    /// Scrollable viewport around at most one child. Its offset is host-owned
+    /// and never reported per frame.
+    scroll,
+    /// Virtualised list. The host asks for row windows with `request-rows`;
+    /// the app materialises them as children.
+    %list,
+    /// Visual separator, horizontal in column parents and vertical in row
+    /// parents.
+    divider,
   }
 
-  enum event-kind { click, change, submit, focus, blur, key, resize, request-rows }
+  /// The semantic events a node can subscribe to with `prop.listen`. Payloads
+  /// are described by `events.event`. Nothing finer-grained (pointer motion,
+  /// scroll deltas, IME composition) is ever delivered.
+  enum event-kind {
+    /// Activation by pointer, keyboard or assistive technology.
+    click,
+    /// The host-owned value of input, textarea, checkbox or select changed.
+    change,
+    /// Enter in an input.
+    submit,
+    focus,
+    blur,
+    /// A key press while the node has focus.
+    key,
+    /// The node's laid-out size changed.
+    resize,
+    /// A list wants rows materialised for a window.
+    request-rows,
+  }
 
-  record option-item { value: string, label: string }
+  /// One entry of a `select`.
+  record option-item {
+    /// Returned by `node.value` and carried by `change` when chosen.
+    value: string,
+    /// Shown to the user and used as the accessible name.
+    label: string,
+  }
 
+  /// A property set on a node, either through `node.set` or `op.set`. Each
+  /// case lists the elements it applies to; setting it on any other element
+  /// is an `inapplicable-prop` error.
   variant prop {
+    /// text, button, input, textarea. On input and textarea this replaces the
+    /// host-owned value and does not emit `change`.
     text(string),
+    /// input, textarea: hint shown while the value is empty.
     placeholder(string),
+    /// Any element. A disabled element and its descendants are not focusable
+    /// and emit no `click`, `change`, `submit`, `key`, `focus` or `blur`;
+    /// `resize` and `request-rows` are unaffected. Default true.
     enabled(bool),
+    /// checkbox: replaces the host-owned checked state without emitting
+    /// `change`. Default false.
     checked(bool),
-    src(string),                 // image: bezel-asset path, never a URL to remote content
-    alt(string),                 // image accessibility name
-    label(string),               // accessibility name override
-    options(list<option-item>),  // select
-    selected(string),            // select
-    row-count(u32),              // list: total rows; host requests windows via request-rows
+    /// image: a bezel-asset path, never a URL to remote content.
+    src(string),
+    /// image: the accessible name.
+    alt(string),
+    /// Any element: overrides the accessible name the host would derive.
+    label(string),
+    /// select: the full set of choices, replacing any previous set.
+    options(list<option-item>),
+    /// select: replaces the host-owned selection with the option whose
+    /// `value` matches, without emitting `change`. No match clears it.
+    selected(string),
+    /// list: the total number of rows. The host requests windows of them
+    /// through `request-rows`.
+    row-count(u32),
+    /// Any element: merged into the node's style. Fields left as `none` keep
+    /// their current value.
     style(style),
-    listen(event-kind),          // subscribe this node to an event kind
+    /// Any element: deliver events of this kind for this node.
+    listen(event-kind),
+    /// Any element: stop delivering events of this kind for this node.
     unlisten(event-kind),
   }
 
-  resource node {
-    constructor(el: element);
-    /// Stable for the life of the resource; ids are never reused in a session.
-    id: func() -> u32;
-    set: func(p: prop);
-    append: func(child: borrow<node>);
-    insert: func(child: borrow<node>, before: borrow<node>);
-    remove: func(child: borrow<node>);
-    /// Host-owned state, readable synchronously: input/textarea text,
-    /// select value, checkbox ("true"/"false"), scroll offset ("x,y").
-    value: func() -> string;
+  /// Why a mutation was rejected. Adding a case is a major version bump.
+  enum error-code {
+    /// The prop does not apply to the node's element (see `prop`).
+    inapplicable-prop,
+    /// The op would make a node its own ancestor.
+    cycle,
+    /// The parent does not accept this child: only box and list take any
+    /// number of children, scroll takes at most one, and every other element
+    /// takes none. The mounted root cannot be attached anywhere, and a node
+    /// with a parent cannot become the root.
+    invalid-child,
   }
 
+  /// A rejected mutation. When a batch fails, nothing in it was applied.
+  record tree-error {
+    /// Position of the offending op in the batch; 0 for `node` methods and
+    /// `set-root`.
+    index: u32,
+    /// `node.id` of the node the offending op targeted (the parent, for
+    /// structural ops).
+    node: u32,
+    code: error-code,
+  }
+
+  /// The host-owned state `node.value` reports.
+  variant node-value {
+    /// Elements without host-owned state.
+    none,
+    /// input, textarea: the current text.
+    text(string),
+    /// checkbox: whether it is checked.
+    checked(bool),
+    /// select: the `value` of the chosen option, if any.
+    selected(option<string>),
+    /// scroll: the offset as (x, y) in logical pixels.
+    scroll-offset(tuple<f32, f32>),
+  }
+
+  /// A handle to one host-owned node. The host keeps a node alive while the
+  /// app holds a handle to it, it is attached to a parent, or it is mounted
+  /// as the root. When none of these holds, the node is destroyed; its
+  /// children are detached and destroyed in turn unless the app still holds
+  /// them. Ids are never reused.
+  resource node {
+    /// Creates a detached node with no props set.
+    constructor(el: element);
+    /// Stable for the life of the resource and never reused in a session.
+    /// `events.event.node` carries this id.
+    id: func() -> u32;
+    /// Same as `apply([op.set((this, p))])`.
+    set: func(p: prop) -> result<_, tree-error>;
+    /// Same as `apply([op.append((this, child))])`.
+    append: func(child: borrow<node>) -> result<_, tree-error>;
+    /// Same as `apply([op.insert((this, child, before))])`.
+    insert: func(child: borrow<node>, before: borrow<node>) -> result<_, tree-error>;
+    /// Same as `apply([op.remove((this, child))])`.
+    remove: func(child: borrow<node>) -> result<_, tree-error>;
+    /// Host-owned state, readable synchronously without a pending event.
+    value: func() -> node-value;
+  }
+
+  /// One mutation. Structural ops name the parent first.
   variant op {
+    /// (target, prop): set a prop on target.
     set(tuple<borrow<node>, prop>),
+    /// (parent, child): move child to the end of parent's children, first
+    /// detaching it from any current parent.
     append(tuple<borrow<node>, borrow<node>>),
+    /// (parent, child, before): as `append`, but place child immediately
+    /// before `before`. If `before` is not a child of parent, child is
+    /// appended.
     insert(tuple<borrow<node>, borrow<node>, borrow<node>>),
+    /// (parent, child): detach child from parent; it is destroyed if the app
+    /// no longer holds it. A no-op if child is not a child of parent.
     remove(tuple<borrow<node>, borrow<node>>),
   }
 
-  /// One crossing for N mutations. Applied atomically before the next frame.
-  /// An invalid op fails the whole batch; the failure is delivered as an event.
-  apply: func(ops: list<op>);
+  /// One crossing for N mutations. The whole batch is validated first, then
+  /// applied atomically before the next frame. If any op is invalid, none is
+  /// applied and the first offending op is reported.
+  apply: func(ops: list<op>) -> result<_, tree-error>;
 
-  set-root: func(root: borrow<node>);
+  /// Mounts `root` as the window's content. The previous root, if any, is
+  /// unmounted and destroyed if the app no longer holds it. Setting the
+  /// current root again is a no-op. Fails with `invalid-child` if `root` has
+  /// a parent; the mounted root cannot be attached anywhere until replaced.
+  set-root: func(root: borrow<node>) -> result<_, tree-error>;
 }
