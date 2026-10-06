@@ -27,6 +27,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: build DOM runtime (embedded by bezel-host-webview via include_str!)
+        run: cd runtime/dom && npm install && npm run build
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
       - run: cargo fmt --all --check

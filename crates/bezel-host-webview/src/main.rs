@@ -7,7 +7,9 @@
 //! Channels: patches (app→UI, binary frames via `bezel://` custom scheme or `evaluate_script` with base64),
 //!           events  (UI→app, wry IPC handler, binary frames).
 
+#[allow(dead_code)] // not wired into the app thread until E3
 mod backend;
+#[allow(dead_code)]
 mod protocol;
 
 use anyhow::Result;
