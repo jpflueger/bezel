@@ -41,4 +41,4 @@ Tauri is a good choice if your UI team already works in HTML and JavaScript; it 
 
 ## Licence
 
-MIT OR Apache-2.0.
+Dual-licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
