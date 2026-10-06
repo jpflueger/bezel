@@ -1,0 +1,51 @@
+name: ci
+on: { push: { branches: [main] }, pull_request: {} }
+permissions: { contents: read }
+jobs:
+  contract:
+    name: contract lint + WIT validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/contract-lint.py .
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm i -g @bytecodealliance/jco
+      - name: WIT parses and generates types (WASI deps fetched with wit-deps)
+        run: |
+          cargo install wit-deps-cli --locked || true
+          wit-deps update || echo "wit-deps unavailable; validating without WASI imports"
+          jco types ./wit --world-name app -o /tmp/types
+  rust:
+    name: rust · ${{ matrix.os }}
+    needs: contract
+    strategy: { fail-fast: false, matrix: { os: [ubuntu-latest, macos-latest, windows-latest] } }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+  dom-runtime:
+    name: dom runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: runtime/dom/package.json }
+      - run: cd runtime/dom && npm install && npm run build && npm test
+  python-sdk:
+    name: python sdk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install componentize-py ruff && ruff check sdk/python examples/counter-python
+  # conformance (screenshots, a11y trees, crossing budgets) is added in E7 and runs on the same 3-OS matrix.

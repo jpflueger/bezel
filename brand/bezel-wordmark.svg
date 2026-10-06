@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120">
+  <path d="M30 14 H84 a22 22 0 0 1 22 22 V44 M106 76 V84 a22 22 0 0 1 -22 22 H36 a22 22 0 0 1 -22 -22 V36 a22 22 0 0 1 22 -22" fill="none" stroke="#101820" stroke-width="12"/>
+  <rect x="78" y="46" width="34" height="28" rx="4" fill="#1F4FD8"/>
+  <text x="140" y="92" font-family="'Bricolage Grotesque', system-ui, sans-serif" font-weight="800" font-size="92" letter-spacing="-2.7" fill="#101820">Bezel</text>
+</svg>

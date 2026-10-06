@@ -1,0 +1,4 @@
+# managed by wit-deps (https://github.com/bytecodealliance/wit-deps)
+# run `wit-deps update` to fetch WASI 0.3 packages into wit/deps/
+clocks = "https://github.com/WebAssembly/wasi-clocks/archive/v0.3.0.tar.gz"
+random = "https://github.com/WebAssembly/wasi-random/archive/v0.3.0.tar.gz"

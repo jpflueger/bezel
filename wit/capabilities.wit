@@ -1,0 +1,10 @@
+package bezel:ui@0.1.0;
+
+/// Declared in bezel.toml, compiled into the world (undeclared WASI interfaces
+/// are not imported), enforced by the host, shown to the user.
+interface capabilities {
+  enum capability { fs-read, fs-write, network, clipboard, notifications }
+  granted: func(c: capability) -> bool;
+  /// Prompts the user if the manifest declares the capability as optional.
+  request: func(c: capability) -> future<bool>;
+}

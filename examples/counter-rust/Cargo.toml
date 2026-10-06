@@ -1,0 +1,11 @@
+[package]
+name = "counter-rust"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+bezel = { path = "../../sdk/rust" }

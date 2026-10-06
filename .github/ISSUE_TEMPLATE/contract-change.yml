@@ -1,0 +1,24 @@
+name: Contract change (wit/)
+description: Propose adding or changing an element, prop, event or interface in bezel:ui
+labels: ["area:contract"]
+body:
+  - type: textarea
+    id: motivation
+    attributes: { label: What can't be built today?, description: A concrete app or screen. }
+    validations: { required: true }
+  - type: textarea
+    id: wit
+    attributes: { label: Proposed WIT diff, render: wit }
+    validations: { required: true }
+  - type: textarea
+    id: webview
+    attributes: { label: Webview host mapping, description: How runtime/dom implements it. }
+    validations: { required: true }
+  - type: textarea
+    id: native
+    attributes: { label: Native host mapping, description: How Masonry/Taffy/AccessKit would implement it. "Cannot" blocks acceptance (ADR-0002). }
+    validations: { required: true }
+  - type: textarea
+    id: a11y
+    attributes: { label: Accessibility, description: Role, name, state, keyboard behaviour. }
+    validations: { required: true }

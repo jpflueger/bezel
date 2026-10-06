@@ -1,0 +1,20 @@
+[package]
+name = "bezel-host-webview"
+description = "Bezel Webview host: tao window + wry webview on the UI thread, Wasmtime on the app thread, binary patch/event channel between them."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "bezel-host-webview"
+path = "src/main.rs"
+
+[dependencies]
+bezel-core = { path = "../bezel-core" }
+anyhow.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tao.workspace = true
+wry.workspace = true
+serde_json.workspace = true

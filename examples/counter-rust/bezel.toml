@@ -1,0 +1,9 @@
+[app]
+name = "Counter"
+id = "dev.bezel.examples.counter-rust"
+version = "0.1.0"
+entry = "src/lib.rs"
+sdk = "rust"
+
+[window]
+title = "Counter (Rust)"

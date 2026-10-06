@@ -1,0 +1,13 @@
+[app]
+name = "Counter"
+id = "dev.bezel.examples.counter"
+version = "0.1.0"
+entry = "src/main.py"
+sdk = "python"
+
+[capabilities]
+# nothing: the counter needs no files, no network
+
+[window]
+title = "Counter"
+initial = { width = 480, height = 320 }
