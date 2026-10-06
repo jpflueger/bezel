@@ -1,4 +1,5 @@
 # managed by wit-deps (https://github.com/bytecodealliance/wit-deps)
 # run `wit-deps update` to fetch WASI 0.3 packages into wit/deps/
-clocks = "https://github.com/WebAssembly/wasi-clocks/archive/v0.3.0.tar.gz"
-random = "https://github.com/WebAssembly/wasi-random/archive/v0.3.0.tar.gz"
+# WASI 0.3 ships from the WebAssembly/WASI monorepo; the per-proposal repos stop at 0.3.0 release candidates.
+clocks = { url = "https://github.com/WebAssembly/WASI/archive/v0.3.0.tar.gz", prefix = "WASI-0.3.0/proposals/clocks" }
+random = { url = "https://github.com/WebAssembly/WASI/archive/v0.3.0.tar.gz", prefix = "WASI-0.3.0/proposals/random" }
