@@ -10,29 +10,31 @@ public surface and the batching model (ADR-0003):
 """
 
 from __future__ import annotations
+
 import asyncio
-from typing import Any, Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, ClassVar
 
 __all__ = [
     "App",
     "Box",
-    "Text",
-    "Input",
-    "Textarea",
     "Button",
     "Checkbox",
-    "Select",
-    "Image",
-    "Scroll",
-    "List",
     "Divider",
+    "Image",
+    "Input",
+    "List",
+    "Scroll",
+    "Select",
+    "Text",
+    "Textarea",
     "run",
 ]
 
 
 # ---- batching -------------------------------------------------------------
 class _Batch:
-    ops: list = []
+    ops: ClassVar[list] = []
 
     @classmethod
     def push(cls, op) -> None:
@@ -55,7 +57,7 @@ class Element:
         self,
         *,
         style: dict | None = None,
-        children: Iterable["Element"] = (),
+        children: Iterable[Element] = (),
         **props: Any,
     ):
         from . import _bindings
@@ -92,12 +94,12 @@ class Element:
         _Batch.push(_bindings.tree.Op_Set((self._node, _prop(name, value))))
         object.__setattr__(self, name, value)
 
-    def append(self, child: "Element") -> None:
+    def append(self, child: Element) -> None:
         from . import _bindings
 
         _Batch.push(_bindings.tree.Op_Append((self._node, child._node)))
 
-    def remove(self, child: "Element") -> None:
+    def remove(self, child: Element) -> None:
         from . import _bindings
 
         _Batch.push(_bindings.tree.Op_Remove((self._node, child._node)))

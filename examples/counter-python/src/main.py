@@ -1,4 +1,4 @@
-from bezel import App, Box, Text, Button, Input, run
+from bezel import App, Box, Button, Input, Text, run
 
 
 class Counter(App):
